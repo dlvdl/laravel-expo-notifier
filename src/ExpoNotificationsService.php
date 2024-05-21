@@ -52,13 +52,6 @@ final class ExpoNotificationsService implements ExpoNotificationsServiceInterfac
             'content-type' => 'application/json',
         ])->baseUrl($apiUrl);
 
-        // https://expo.dev/blog/expo-adds-support-for-fcm-http-v1-api
-        if (config('expo-notifications.service.use_fcm_legacy_api')) {
-            $this->http->withQueryParameters([
-                self::USE_FCM_LEGACY_API_QUERY_PARAM => true,
-            ]);
-        }
-
         $this->tickets = collect();
     }
 
@@ -215,7 +208,13 @@ final class ExpoNotificationsService implements ExpoNotificationsServiceInterfac
 
     private function sendNotificationsChunk(array $chunk)
     {
-        $response = $this->http->post(self::SEND_NOTIFICATION_ENDPOINT, $chunk);
+        $url = self::SEND_NOTIFICATION_ENDPOINT;
+
+        if (config('expo-notifications.service.use_fcm_legacy_api')) {
+            $url .= '?' . self::USE_FCM_LEGACY_API_QUERY_PARAM . '=true';
+        }
+
+        $response = $this->http->post($url, $chunk);
 
         if (! $response->successful()) {
             throw new ExpoNotificationsException($response->toPsrResponse());
